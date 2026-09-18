@@ -31,3 +31,30 @@ def test_evidence_match_is_case_and_whitespace_insensitive():
         field="Governing Law", value="Delaware", evidence_quote="LAWS  of the state OF Delaware"
     )
     assert verify_field(field, DOCUMENT).value == "Delaware"
+
+
+async def test_oversized_document_is_truncated_with_a_warning(monkeypatch, caplog):
+    import logging
+
+    from clauseflow.domain.models import ExtractedFields
+    from clauseflow.graph import nodes as nodes_module
+
+    seen = {}
+
+    class _Structured:
+        async def ainvoke(self, prompt: str):
+            seen["prompt_len"] = len(prompt)
+            return ExtractedFields(fields=[])
+
+    class _Chat:
+        def with_structured_output(self, schema):
+            return _Structured()
+
+    monkeypatch.setattr(nodes_module, "chat_model", lambda *a, **k: _Chat())
+    monkeypatch.setattr(nodes_module.settings, "max_document_chars", 100)
+
+    with caplog.at_level(logging.WARNING):
+        await nodes_module.extract_fields({"document_text": "x" * 5000})
+
+    assert seen["prompt_len"] < 5000
+    assert "reported missing" in caplog.text

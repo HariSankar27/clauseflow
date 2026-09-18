@@ -1,10 +1,14 @@
+import logging
 from pathlib import Path
 
 from ..domain.models import ExtractedFields, FieldExtraction
 from ..llm import chat_model
 from ..parse.docling_parser import parse_pdf
+from ..settings import settings
 from .prompts import EXTRACT_PROMPT
 from .state import PipelineState
+
+logger = logging.getLogger(__name__)
 
 
 def _norm(s: str) -> str:
@@ -21,8 +25,20 @@ def parse_document(state: PipelineState) -> dict:
 
 
 async def extract_fields(state: PipelineState) -> dict:
+    text = state["document_text"]
+    if len(text) > settings.max_document_chars:
+        # Say so loudly: a field only stated in the dropped tail comes back
+        # "missing", which is safe but incomplete, and silence would hide why.
+        logger.warning(
+            "Document is %d chars; sending the first %d. Fields stated only past "
+            "that point will be reported missing. Chunking lands in M4.",
+            len(text),
+            settings.max_document_chars,
+        )
+        text = text[: settings.max_document_chars]
+
     llm = chat_model().with_structured_output(ExtractedFields)
-    result = await llm.ainvoke(EXTRACT_PROMPT.format(contract_text=state["document_text"]))
+    result = await llm.ainvoke(EXTRACT_PROMPT.format(contract_text=text))
     return {"fields": [f.model_dump() for f in result.fields]}
 
 

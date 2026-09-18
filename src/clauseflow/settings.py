@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     llm_provider: str = "google_genai"
     llm_model: str = "gemini-2.5-flash"
     database_url: str = "postgresql+psycopg://app:app@localhost:5432/app"
+    db_connect_timeout_s: int = 10
+    # Longest document text sent to the model in one prompt. Chunking for
+    # longer contracts is M4; until then the tail is dropped, not fabricated.
+    max_document_chars: int = 120_000
     monthly_budget_usd: float = 20.0
 
 
