@@ -10,6 +10,13 @@ from .graph.build import build_graph
 app = typer.Typer()
 
 
+@app.callback()
+def main() -> None:
+    """clauseflow - turns contract PDFs into evidence-backed records."""
+    # Typer collapses a single-command app into a bare `clauseflow <arg>`,
+    # dropping the verb the README documents. A callback keeps the subcommand.
+
+
 @app.command()
 def extract(pdf_path: str) -> None:
     """Parses a contract PDF, extracts fields with evidence, and stores the result."""
