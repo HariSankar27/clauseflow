@@ -22,4 +22,4 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run pytest -m "not integration and not eval"
         env:
-          DATABASE_URL: postgresql://app:app@localhost:5432/app
+          DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app
