@@ -20,6 +20,12 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run pytest -m "not integration and not eval"
+      # Integration tests hit real tables; without this the schema is empty.
+      - run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app
+      # Run the integration tests too - CI has the Postgres the dev machine lacks,
+      # so this is the only place the DB layer actually gets exercised.
+      - run: uv run pytest -m "not eval"
         env:
           DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app
